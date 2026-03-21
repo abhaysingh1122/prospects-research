@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { CompanyRecord, ActionStatus } from '@/lib/types';
 import { StatusBadge } from './StatusBadge';
-import { X, Search, Trash2, ExternalLink, Building2, Users, Globe, Briefcase, Copy, Check, Maximize2, Minimize2, Mail } from 'lucide-react';
+import { X, Search, Trash2, ExternalLink, Building2, Users, Globe, Briefcase, Copy, Check, Maximize2, Minimize2, Mail, Send } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface RecordDrawerProps {
@@ -14,7 +14,7 @@ interface RecordDrawerProps {
 }
 
 export function RecordDrawer({ record, onClose, onUpdate, onDelete }: RecordDrawerProps) {
-  const [tab, setTab] = useState<'research' | 'competitor' | 'enrich' | 'email'>('research');
+  const [tab, setTab] = useState<'research' | 'competitor' | 'enrich' | 'email' | 'sent'>('research');
   const [expanded, setExpanded] = useState(false);
 
   if (!record) return null;
@@ -117,6 +117,41 @@ export function RecordDrawer({ record, onClose, onUpdate, onDelete }: RecordDraw
     }
   }
 
+  async function handleSend() {
+    if (!record) return;
+    if (!record.email_draft?.to) {
+      toast.error('Add a recipient email first');
+      setTab('email');
+      return;
+    }
+    if (!record.email_draft?.subject && !record.email_draft?.body) {
+      toast.error('Draft an email first');
+      setTab('email');
+      return;
+    }
+    onUpdate({ ...record, send_status: 'loading' });
+    setTab('sent');
+    try {
+      const res = await fetch('/api/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: record.id,
+          to: record.email_draft.to,
+          subject: record.email_draft.subject,
+          body: record.email_draft.body,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Send failed');
+      onUpdate({ ...record, send_status: 'done', sent_at: data.sent_at || new Date().toISOString(), send_message_id: data.message_id });
+      toast.success('Email sent');
+    } catch (err) {
+      onUpdate({ ...record, send_status: 'error', send_error: err instanceof Error ? err.message : 'Unknown error' });
+      toast.error('Email send failed');
+    }
+  }
+
   return (
     <div
       style={{ position: 'fixed', inset: 0, zIndex: 300, display: 'flex', justifyContent: 'flex-end', background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}
@@ -169,6 +204,7 @@ export function RecordDrawer({ record, onClose, onUpdate, onDelete }: RecordDraw
           <ActionBtn icon={<Building2 size={13} />} label="Competitor Research" status={record.competitor_status} onClick={handleCompetitor} color="var(--purple)" />
           <ActionBtn icon={<Users size={13} />} label="Generate Strategy" status={record.enrich_status} onClick={handleEnrich} color="var(--blue)" />
           <ActionBtn icon={<Mail size={13} />} label="Draft Email" status={record.email_status} onClick={handleEmail} color="var(--green)" />
+          <ActionBtn icon={<Send size={13} />} label="Send Email" status={record.send_status} onClick={handleSend} color="var(--accent)" />
         </div>
 
         {/* Tabs */}
@@ -178,6 +214,7 @@ export function RecordDrawer({ record, onClose, onUpdate, onDelete }: RecordDraw
             { id: 'competitor' as const, label: 'Competitor', status: record.competitor_status },
             { id: 'enrich' as const, label: 'Strategy', status: record.enrich_status },
             { id: 'email' as const, label: 'Email Drafts', status: record.email_status },
+            { id: 'sent' as const, label: 'Email Sent', status: record.send_status },
           ]).map((t) => (
             <button key={t.id} onClick={() => setTab(t.id)}
               style={{
@@ -202,6 +239,7 @@ export function RecordDrawer({ record, onClose, onUpdate, onDelete }: RecordDraw
           {tab === 'competitor' && <CompetitorContent record={record} />}
           {tab === 'enrich' && <EnrichContent record={record} />}
           {tab === 'email' && <EmailContent record={record} onUpdate={onUpdate} />}
+          {tab === 'sent' && <SentContent record={record} />}
         </div>
       </div>
     </div>
@@ -700,6 +738,55 @@ function EmailContent({ record, onUpdate }: { record: CompanyRecord; onUpdate: (
         <Copy size={13} />
         Copy Email
       </button>
+    </div>
+  );
+}
+
+function SentContent({ record }: { record: CompanyRecord }) {
+  if (record.send_status === 'idle') return (
+    <Empty icon={<Send size={28} />} text="Draft an email first, then click Send Email" />
+  );
+  if (record.send_status === 'loading') return (
+    <Loading color="var(--accent)" text="Sending email..." />
+  );
+  if (record.send_status === 'error') return (
+    <ErrorBox text={record.send_error || 'Email send failed'} />
+  );
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', padding: '20px 0' }}>
+        <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'var(--green)', opacity: .15, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Check size={22} style={{ color: 'var(--green)', opacity: 1 }} />
+        </div>
+        <p style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: '.95rem', color: 'var(--green)' }}>Email Sent</p>
+      </div>
+
+      {record.sent_at && (
+        <DataBox label="Sent At">
+          <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '.72rem', color: 'var(--ink-2)' }}>
+            {new Date(record.sent_at).toLocaleString()}
+          </span>
+        </DataBox>
+      )}
+
+      {record.send_message_id && (
+        <DataBox label="Message ID">
+          <CopyLine value={record.send_message_id} />
+        </DataBox>
+      )}
+
+      {record.email_draft && (
+        <>
+          <DataBox label="Subject">
+            <span style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '.85rem', color: 'var(--ink)' }}>{record.email_draft.subject}</span>
+          </DataBox>
+          <DataBox label="Sent To">
+            <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '.72rem', color: 'var(--ink-2)' }}>{record.email_draft.to}</span>
+          </DataBox>
+        </>
+      )}
     </div>
   );
 }
