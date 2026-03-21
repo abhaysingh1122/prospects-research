@@ -756,9 +756,9 @@ function SentContent({ record }: { record: CompanyRecord }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
 
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', padding: '20px 0' }}>
-        <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'var(--green)', opacity: .15, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Check size={22} style={{ color: 'var(--green)', opacity: 1 }} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '14px 0' }}>
+        <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--green)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <Check size={14} style={{ color: 'var(--panel)' }} />
         </div>
         <p style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: '.95rem', color: 'var(--green)' }}>Email Sent</p>
       </div>
@@ -775,17 +775,6 @@ function SentContent({ record }: { record: CompanyRecord }) {
         <DataBox label="Message ID">
           <CopyLine value={record.send_message_id} />
         </DataBox>
-      )}
-
-      {record.email_draft && (
-        <>
-          <DataBox label="Subject">
-            <span style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '.85rem', color: 'var(--ink)' }}>{record.email_draft.subject}</span>
-          </DataBox>
-          <DataBox label="Sent To">
-            <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '.72rem', color: 'var(--ink-2)' }}>{record.email_draft.to}</span>
-          </DataBox>
-        </>
       )}
     </div>
   );
