@@ -158,7 +158,7 @@ export function RecordDrawer({ record, onClose, onUpdate, onDelete }: RecordDraw
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div style={{
-        width: expanded ? '100vw' : '520px', maxWidth: '100vw', height: '100vh',
+        width: expanded ? '100vw' : '680px', maxWidth: '100vw', height: '100vh',
         background: 'var(--panel)',
         borderLeft: expanded ? 'none' : '1px solid var(--glass-border)',
         boxShadow: expanded ? 'none' : '-8px 0 40px rgba(0,0,0,.5)',
