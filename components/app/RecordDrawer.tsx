@@ -197,12 +197,8 @@ function ActionBtn({ icon, label, status, onClick, color, disabled = false }: {
       className="btn-action"
       style={{
         flex: 1,
-        background: off ? 'var(--surface)' : `${color}22`,
         color: off ? 'var(--ink-4)' : color,
-        border: `1.5px solid ${off ? 'var(--glass-border)' : color + '55'}`,
-        opacity: disabled && !loading ? 0.45 : 1,
-        boxShadow: off ? 'none' : `0 2px 8px ${color}20`,
-        fontWeight: 600,
+        border: 'none',
       }}
     >
       {icon}
