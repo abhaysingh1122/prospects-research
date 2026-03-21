@@ -14,7 +14,7 @@ interface RecordDrawerProps {
 }
 
 export function RecordDrawer({ record, onClose, onUpdate, onDelete }: RecordDrawerProps) {
-  const [tab, setTab] = useState<'research' | 'competitor'>('research');
+  const [tab, setTab] = useState<'research' | 'competitor' | 'enrich'>('research');
   const [expanded, setExpanded] = useState(false);
 
   if (!record) return null;
@@ -77,6 +77,26 @@ export function RecordDrawer({ record, onClose, onUpdate, onDelete }: RecordDraw
     }
   }
 
+  async function handleEnrich() {
+    if (!record) return;
+    onUpdate({ ...record, enrich_status: 'loading' });
+    setTab('enrich');
+    try {
+      const res = await fetch('/api/enrich', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: record.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Enrichment failed');
+      onUpdate({ ...record, enrich_status: 'done', enrich_data: data.enrich_data });
+      toast.success('Lead enrichment complete');
+    } catch (err) {
+      onUpdate({ ...record, enrich_status: 'error', enrich_error: err instanceof Error ? err.message : 'Unknown error' });
+      toast.error('Enrichment failed');
+    }
+  }
+
   return (
     <div
       style={{ position: 'fixed', inset: 0, zIndex: 300, display: 'flex', justifyContent: 'flex-end', background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}
@@ -127,6 +147,7 @@ export function RecordDrawer({ record, onClose, onUpdate, onDelete }: RecordDraw
         <div style={{ display: 'flex', gap: '8px', padding: '14px 20px', borderBottom: '1px solid var(--glass-border)', flexShrink: 0 }}>
           <ActionBtn icon={<Search size={13} />} label="Company Research" status={record.research_status} onClick={handleResearch} color="var(--teal)" />
           <ActionBtn icon={<Building2 size={13} />} label="Competitor Research" status={record.competitor_status} onClick={handleCompetitor} color="var(--purple)" />
+          <ActionBtn icon={<Users size={13} />} label="Enrich" status={record.enrich_status} onClick={handleEnrich} color="var(--blue)" />
         </div>
 
         {/* Tabs */}
@@ -134,6 +155,7 @@ export function RecordDrawer({ record, onClose, onUpdate, onDelete }: RecordDraw
           {([
             { id: 'research' as const, label: 'Company Research', status: record.research_status },
             { id: 'competitor' as const, label: 'Competitor Research', status: record.competitor_status },
+            { id: 'enrich' as const, label: 'Enrich', status: record.enrich_status },
           ]).map((t) => (
             <button key={t.id} onClick={() => setTab(t.id)}
               style={{
@@ -156,6 +178,7 @@ export function RecordDrawer({ record, onClose, onUpdate, onDelete }: RecordDraw
         <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
           {tab === 'research' && <ResearchContent record={record} />}
           {tab === 'competitor' && <CompetitorContent record={record} />}
+          {tab === 'enrich' && <EnrichContent record={record} />}
         </div>
       </div>
     </div>
@@ -493,6 +516,66 @@ function CompetitorContent({ record }: { record: CompanyRecord }) {
       {showCompetitor && d.competitive_summary && (
         <DataBox label="Competitive Summary">
           <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '.82rem', color: 'var(--ink-2)', lineHeight: 1.7 }}>{d.competitive_summary}</p>
+        </DataBox>
+      )}
+
+    </div>
+  );
+}
+
+function EnrichContent({ record }: { record: CompanyRecord }) {
+  if (record.enrich_status === 'idle') return (
+    <Empty icon={<Users size={28} />} text="Click Enrich to find leads and contacts" />
+  );
+  if (record.enrich_status === 'loading') return (
+    <Loading color="var(--blue)" text="Enriching leads..." />
+  );
+  if (record.enrich_status === 'error') return (
+    <ErrorBox text={record.enrich_error || 'Enrichment failed'} />
+  );
+
+  const d = record.enrich_data;
+  if (!d) return (
+    <Empty icon={<Users size={28} />} text="No enrichment data available" />
+  );
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+
+      {d.enrichment_summary && (
+        <DataBox label="Summary">
+          <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '.82rem', color: 'var(--blue)', lineHeight: 1.7, fontStyle: 'italic' }}>{d.enrichment_summary}</p>
+        </DataBox>
+      )}
+
+      {(d.leads?.length ?? 0) > 0 && (
+        <DataBox label={`Leads (${d.leads!.length})`}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {d.leads!.map((lead, i) => (
+              <div key={i} style={{ padding: '10px 12px', background: 'var(--panel)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--glass-border)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                  <p style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '.85rem', color: 'var(--ink)' }}>{lead.name || 'Unknown'}</p>
+                  {lead.linkedin && (
+                    <a href={lead.linkedin} target="_blank" rel="noopener noreferrer"
+                      style={{ display: 'flex', alignItems: 'center', gap: '4px', fontFamily: 'DM Mono, monospace', fontSize: '.58rem', color: 'var(--blue)', textDecoration: 'underline', textUnderlineOffset: '2px' }}>
+                      <ExternalLink size={9} />LinkedIn
+                    </a>
+                  )}
+                </div>
+                {lead.title && (
+                  <p style={{ fontFamily: 'DM Mono, monospace', fontSize: '.65rem', color: 'var(--ink-3)', marginBottom: '6px' }}>{lead.title}</p>
+                )}
+                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                  {lead.email && (
+                    <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '.62rem', color: 'var(--ink-2)' }}>{lead.email}</span>
+                  )}
+                  {lead.phone && (
+                    <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '.62rem', color: 'var(--ink-2)' }}>{lead.phone}</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
         </DataBox>
       )}
 
