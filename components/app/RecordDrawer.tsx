@@ -1,0 +1,451 @@
+'use client';
+
+import { useState } from 'react';
+import { CompanyRecord, ActionStatus } from '@/lib/types';
+import { StatusBadge } from './StatusBadge';
+import { X, Search, Trash2, ExternalLink, Building2, Users, Globe, Briefcase, Copy, Check } from 'lucide-react';
+import { toast } from 'sonner';
+
+interface RecordDrawerProps {
+  record: CompanyRecord | null;
+  onClose: () => void;
+  onUpdate: (record: CompanyRecord) => void;
+  onDelete: (id: string) => void;
+}
+
+export function RecordDrawer({ record, onClose, onUpdate, onDelete }: RecordDrawerProps) {
+  const [tab, setTab] = useState<'research' | 'competitor'>('research');
+
+  if (!record) return null;
+
+  async function handleResearch() {
+    if (!record) return;
+    onUpdate({ ...record, research_status: 'loading' });
+    try {
+      const res = await fetch('/api/research', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: record.id, company_name: record.company_name, linkedin_url: record.linkedin_url, website_url: record.website_url }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Research failed');
+      onUpdate({
+        ...record,
+        research_status: 'done',
+        website_url: data.website_url || record.website_url,
+        research_data: {
+          universal_name: data.universal_name,
+          tagline: data.tagline,
+          description: data.description,
+          employee_count: data.employee_count,
+          location: data.location,
+          specialities: data.specialities,
+          industries: data.industries,
+          phone_number: data.phone_number,
+          summary: data.summary,
+          key_products: data.key_products,
+          competitors: data.competitors,
+          recent_news: data.recent_news,
+          key_contacts: data.key_contacts,
+        },
+      });
+      toast.success('Research complete');
+    } catch (err) {
+      onUpdate({ ...record, research_status: 'error', research_error: err instanceof Error ? err.message : 'Unknown error' });
+      toast.error('Research failed');
+    }
+  }
+
+  async function handleCompetitor() {
+    if (!record) return;
+    onUpdate({ ...record, competitor_status: 'loading' });
+    setTab('competitor');
+    try {
+      const res = await fetch('/api/competitor-research', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: record.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Competitor research failed');
+      onUpdate({ ...record, competitor_status: 'done' });
+      toast.success('Competitor research triggered');
+    } catch (err) {
+      onUpdate({ ...record, competitor_status: 'error', competitor_error: err instanceof Error ? err.message : 'Unknown error' });
+      toast.error('Competitor research failed');
+    }
+  }
+
+  return (
+    <div
+      style={{ position: 'fixed', inset: 0, zIndex: 300, display: 'flex', justifyContent: 'flex-end', background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div style={{
+        width: '520px', maxWidth: '100vw', height: '100vh',
+        background: 'var(--panel)',
+        borderLeft: '1px solid var(--glass-border)',
+        boxShadow: '-8px 0 40px rgba(0,0,0,.5)',
+        display: 'flex', flexDirection: 'column', overflow: 'hidden',
+      }}>
+        {/* Header */}
+        <div style={{ padding: '18px 20px', borderBottom: '1px solid var(--glass-border)', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexShrink: 0 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+              <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--accent-dim)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Building2 size={13} />
+              </div>
+              <h2 style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: '1.1rem', color: 'var(--ink)', margin: 0 }}>{record.company_name}</h2>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingLeft: '36px', flexWrap: 'wrap' }}>
+              <a
+                href={record.linkedin_url.startsWith('http') ? record.linkedin_url : `https://${record.linkedin_url}`}
+                target="_blank" rel="noopener noreferrer"
+                style={{ display: 'flex', alignItems: 'center', gap: '4px', fontFamily: 'DM Mono, monospace', fontSize: '.62rem', color: 'var(--blue)', textDecoration: 'none' }}
+              >
+                <ExternalLink size={10} /> LinkedIn
+              </a>
+              <CopyBadge value={record.id} />
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '6px', flexShrink: 0, marginLeft: '12px' }}>
+            <button onClick={() => { onDelete(record.id); onClose(); }} style={{ padding: '6px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--red)', borderRadius: '8px' }} title="Delete">
+              <Trash2 size={14} />
+            </button>
+            <button onClick={onClose} style={{ padding: '6px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ink-3)', borderRadius: '8px' }}>
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+
+        {/* Action buttons */}
+        <div style={{ display: 'flex', gap: '8px', padding: '14px 20px', borderBottom: '1px solid var(--glass-border)', flexShrink: 0 }}>
+          <ActionBtn icon={<Search size={13} />} label="Company Research" status={record.research_status} onClick={handleResearch} color="var(--teal)" />
+          <ActionBtn icon={<Building2 size={13} />} label="Competitor Research" status={record.competitor_status} onClick={handleCompetitor} color="var(--purple)" />
+        </div>
+
+        {/* Tabs */}
+        <div style={{ display: 'flex', borderBottom: '1px solid var(--glass-border)', flexShrink: 0 }}>
+          {([
+            { id: 'research' as const, label: 'Company Research', status: record.research_status },
+            { id: 'competitor' as const, label: 'Competitor Research', status: record.competitor_status },
+          ]).map((t) => (
+            <button key={t.id} onClick={() => setTab(t.id)}
+              style={{
+                flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px',
+                padding: '11px 0',
+                fontFamily: 'DM Mono, monospace', fontSize: '.62rem', fontWeight: 500,
+                color: tab === t.id ? 'var(--accent)' : 'var(--ink-3)',
+                background: 'none', border: 'none', cursor: 'pointer',
+                borderBottom: tab === t.id ? '2px solid var(--accent)' : '2px solid transparent',
+                transition: 'color .15s',
+              }}
+            >
+              {t.label}
+              <StatusBadge status={t.status} />
+            </button>
+          ))}
+        </div>
+
+        {/* Content */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
+          {tab === 'research' && <ResearchContent record={record} />}
+          {tab === 'competitor' && <CompetitorContent record={record} />}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ActionBtn({ icon, label, status, onClick, color, disabled = false }: {
+  icon: React.ReactNode; label: string; status: ActionStatus;
+  onClick: () => void; color: string; disabled?: boolean;
+}) {
+  const loading = status === 'loading';
+  const off = disabled || loading;
+  return (
+    <button
+      onClick={onClick} disabled={off}
+      className="btn-action"
+      style={{
+        flex: 1,
+        background: off ? 'var(--surface)' : `${color}18`,
+        color: off ? 'var(--ink-4)' : color,
+        border: `1px solid ${off ? 'var(--glass-border)' : color + '35'}`,
+        opacity: disabled && !loading ? 0.45 : 1,
+      }}
+    >
+      {icon}
+      {loading ? 'Running...' : label}
+    </button>
+  );
+}
+
+function ResearchContent({ record }: { record: CompanyRecord }) {
+  if (record.research_status === 'idle') return (
+    <Empty icon={<Search size={28} />} text="Click Company Research to fetch data" />
+  );
+  if (record.research_status === 'loading') return (
+    <Loading color="var(--teal)" text="Researching company..." />
+  );
+  if (record.research_status === 'error') return (
+    <ErrorBox text={record.research_error || 'Research failed'} />
+  );
+
+  const d = record.research_data;
+  if (!d) return null;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+
+      {/* Interface ID — full width with copy */}
+      <DataBox label="Interface ID">
+        <CopyLine value={record.id} />
+      </DataBox>
+
+      {/* Company Name + Universal Name */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+        <DataBox label="Company Name">
+          <span style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '.9rem', color: 'var(--ink)' }}>{record.company_name}</span>
+        </DataBox>
+        {d.universal_name && (
+          <DataBox label="Universal Name">
+            <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '.75rem', color: 'var(--ink-2)' }}>{d.universal_name}</span>
+          </DataBox>
+        )}
+      </div>
+
+      {/* Employee Count + Phone */}
+      {(d.employee_count != null || d.phone_number) && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+          {d.employee_count != null && (
+            <DataBox label="Employee Count">
+              <span style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '1.4rem', color: 'var(--ink)', lineHeight: 1 }}>{d.employee_count}</span>
+            </DataBox>
+          )}
+          {d.phone_number && (
+            <DataBox label="Phone Number">
+              <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '.75rem', color: 'var(--ink-2)' }}>{d.phone_number}</span>
+            </DataBox>
+          )}
+        </div>
+      )}
+
+      {/* LinkedIn + Website */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+        <DataBox label="LinkedIn URL">
+          <a href={record.linkedin_url.startsWith('http') ? record.linkedin_url : `https://${record.linkedin_url}`}
+            target="_blank" rel="noopener noreferrer"
+            style={{ display: 'flex', alignItems: 'center', gap: '5px', fontFamily: 'DM Mono, monospace', fontSize: '.65rem', color: 'var(--blue)', textDecoration: 'none', wordBreak: 'break-all' }}>
+            <ExternalLink size={10} style={{ flexShrink: 0 }} />{record.linkedin_url}
+          </a>
+        </DataBox>
+        {record.website_url && (
+          <DataBox label="Website URL">
+            <a href={record.website_url.startsWith('http') ? record.website_url : `https://${record.website_url}`}
+              target="_blank" rel="noopener noreferrer"
+              style={{ display: 'flex', alignItems: 'center', gap: '5px', fontFamily: 'DM Mono, monospace', fontSize: '.65rem', color: 'var(--blue)', textDecoration: 'none', wordBreak: 'break-all' }}>
+              <ExternalLink size={10} style={{ flexShrink: 0 }} />{record.website_url}
+            </a>
+          </DataBox>
+        )}
+      </div>
+
+      {/* Tagline */}
+      {d.tagline && (
+        <DataBox label="Tagline">
+          <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '.84rem', color: 'var(--accent)', lineHeight: 1.55, fontStyle: 'italic' }}>{d.tagline}</p>
+        </DataBox>
+      )}
+
+      {/* Description */}
+      {d.description && (
+        <DataBox label="Description">
+          <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '.82rem', color: 'var(--ink-2)', lineHeight: 1.7, whiteSpace: 'pre-line' }}>{d.description}</p>
+        </DataBox>
+      )}
+
+      {/* Industries */}
+      {d.industries && (
+        <DataBox label="Industries">
+          <TagsFromBullets text={d.industries} color="var(--blue)" />
+        </DataBox>
+      )}
+
+      {/* Specialities */}
+      {d.specialities && (
+        <DataBox label="Specialities">
+          <BulletList text={d.specialities} />
+        </DataBox>
+      )}
+
+      {/* Location */}
+      {d.location && (
+        <DataBox label="Locations">
+          <p style={{ fontFamily: 'DM Mono, monospace', fontSize: '.68rem', color: 'var(--ink-2)', lineHeight: 1.9, whiteSpace: 'pre-line' }}>{d.location}</p>
+        </DataBox>
+      )}
+
+      {/* Key contacts (future AI) */}
+      {(d.key_contacts?.length ?? 0) > 0 && (
+        <DataBox label="Key Contacts">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {d.key_contacts!.map((c, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div>
+                  <p style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 600, fontSize: '.84rem', color: 'var(--ink)' }}>{c.name}</p>
+                  <p style={{ fontFamily: 'DM Mono, monospace', fontSize: '.6rem', color: 'var(--ink-3)' }}>{c.title}</p>
+                </div>
+                {c.linkedin && (
+                  <a href={c.linkedin} target="_blank" rel="noopener noreferrer"
+                    style={{ fontFamily: 'DM Mono, monospace', fontSize: '.6rem', color: 'var(--blue)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <ExternalLink size={9} />LinkedIn
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
+        </DataBox>
+      )}
+    </div>
+  );
+}
+
+
+function CompetitorContent({ record }: { record: CompanyRecord }) {
+  if (record.competitor_status === 'idle') return (
+    <Empty icon={<Building2 size={28} />} text="Click Competitor Research to trigger analysis" />
+  );
+  if (record.competitor_status === 'loading') return (
+    <Loading color="var(--purple)" text="Running competitor analysis..." />
+  );
+  if (record.competitor_status === 'error') return (
+    <ErrorBox text={record.competitor_error || 'Competitor research failed'} />
+  );
+  // done
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '200px', gap: '12px', textAlign: 'center' }}>
+      <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'var(--purple)', opacity: .15, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Building2 size={22} style={{ color: 'var(--purple)', opacity: 1 }} />
+      </div>
+      <p style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: '.95rem', color: 'var(--purple)' }}>Competitor research triggered</p>
+      <p style={{ fontFamily: 'DM Mono, monospace', fontSize: '.65rem', color: 'var(--ink-3)', maxWidth: '280px', lineHeight: 1.6 }}>
+        n8n is running the analysis. Results will be written back to Airtable.
+      </p>
+    </div>
+  );
+}
+
+/* ─── Helpers ─── */
+
+/** Uniform box: label on top, content below — used for ALL data fields */
+function DataBox({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div style={{ padding: '12px 14px', background: 'var(--surface)', borderRadius: 'var(--radius-sm)', boxShadow: 'var(--neu-in)', minWidth: 0 }}>
+      <p style={{ fontFamily: 'DM Mono, monospace', fontSize: '.55rem', color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: '8px' }}>{label}</p>
+      {children}
+    </div>
+  );
+}
+
+/** ID value with inline copy button */
+function CopyLine({ value }: { value: string }) {
+  const [copied, setCopied] = useState(false);
+  function copy() {
+    navigator.clipboard.writeText(value);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+      <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '.68rem', color: 'var(--ink-2)', letterSpacing: '.03em', wordBreak: 'break-all' }}>{value}</span>
+      <button onClick={copy} title="Copy ID"
+        style={{ background: 'none', border: 'none', cursor: 'pointer', color: copied ? 'var(--green)' : 'var(--ink-3)', padding: '2px', flexShrink: 0, display: 'flex', alignItems: 'center', transition: 'color .2s' }}>
+        {copied ? <Check size={13} /> : <Copy size={13} />}
+      </button>
+    </div>
+  );
+}
+
+/** Badge in the header showing ID + copy */
+function CopyBadge({ value }: { value: string }) {
+  const [copied, setCopied] = useState(false);
+  function copy(e: React.MouseEvent) {
+    e.preventDefault();
+    navigator.clipboard.writeText(value);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontFamily: 'DM Mono, monospace', fontSize: '.58rem', color: 'var(--ink-4)', letterSpacing: '.04em' }}>
+      ID: {value}
+      <button onClick={copy} title="Copy Interface ID"
+        style={{ background: 'none', border: 'none', cursor: 'pointer', color: copied ? 'var(--green)' : 'var(--ink-4)', padding: '1px', display: 'flex', alignItems: 'center', transition: 'color .2s' }}>
+        {copied ? <Check size={11} /> : <Copy size={11} />}
+      </button>
+    </span>
+  );
+}
+
+/** Render bullet text as a clean vertical bullet list */
+function BulletList({ text }: { text: string }) {
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  return (
+    <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '5px' }}>
+      {lines.map((line, i) => (
+        <li key={i} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', fontFamily: 'DM Mono, monospace', fontSize: '.72rem', color: 'var(--ink-2)', lineHeight: 1.5 }}>
+          <span style={{ color: 'var(--teal)', flexShrink: 0, marginTop: '1px' }}>•</span>
+          <span>{line.startsWith('•') ? line.slice(1).trim() : line}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** Parse "• Tag\n• Tag" strings into tag pill chips */
+function TagsFromBullets({ text, color }: { text: string; color: string }) {
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  const tags = lines.filter(l => l.startsWith('•')).map(l => l.slice(1).trim());
+  const rest = lines.filter(l => !l.startsWith('•'));
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      {tags.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+          {tags.map((t, i) => (
+            <span key={i} style={{
+              fontFamily: 'DM Sans, sans-serif', fontSize: '.75rem', fontWeight: 500,
+              color, background: `${color}18`, border: `1px solid ${color}30`,
+              borderRadius: '6px', padding: '4px 10px', lineHeight: 1.3,
+            }}>{t}</span>
+          ))}
+        </div>
+      )}
+      {rest.map((line, i) => (
+        <p key={i} style={{ fontFamily: 'DM Mono, monospace', fontSize: '.65rem', color: 'var(--ink-3)', lineHeight: 1.5 }}>{line}</p>
+      ))}
+    </div>
+  );
+}
+function Empty({ icon, text }: { icon: React.ReactNode; text: string }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: '200px', textAlign: 'center', gap: '12px' }}>
+      <span style={{ color: 'var(--ink-4)', opacity: .5 }}>{icon}</span>
+      <p style={{ fontFamily: 'DM Mono, monospace', fontSize: '.7rem', color: 'var(--ink-3)' }}>{text}</p>
+    </div>
+  );
+}
+function Loading({ color, text }: { color: string; text: string }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: '200px', gap: '12px' }}>
+      <span className="pulse-dot" style={{ background: color, width: '10px', height: '10px' }} />
+      <p style={{ fontFamily: 'DM Mono, monospace', fontSize: '.7rem', color }}>{text}</p>
+    </div>
+  );
+}
+function ErrorBox({ text }: { text: string }) {
+  return (
+    <div style={{ padding: '16px', borderRadius: 'var(--radius-sm)', background: 'rgba(204,120,120,0.1)', border: '1px solid rgba(204,120,120,0.3)' }}>
+      <p style={{ fontFamily: 'DM Mono, monospace', fontSize: '.72rem', color: 'var(--red)' }}>{text}</p>
+    </div>
+  );
+}
