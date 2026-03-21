@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
     }
 
     const payload = {
-      action: "enrich",
+      action: "generate strategy",
       id,
       timestamp: new Date().toISOString(),
     };
