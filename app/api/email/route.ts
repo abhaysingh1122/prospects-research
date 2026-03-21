@@ -43,12 +43,15 @@ export async function POST(req: NextRequest) {
     }
 
     const rawJson = await n8nRes.json();
-    const raw = Array.isArray(rawJson) ? rawJson[0] : rawJson;
+    // n8n Respond to Webhook may return:
+    // [{ subject, body }] or [{ json: { subject, body } }] or { subject, body }
+    const item = Array.isArray(rawJson) ? rawJson[0] : rawJson;
+    const raw = (item && typeof item === 'object' && 'json' in item && typeof item.json === 'object') ? item.json : item;
 
     const email_draft = {
-      subject: raw["Subject"] || raw["subject"] || "",
-      body: raw["Body"] || raw["body"] || "",
-      to: raw["To"] || raw["to"] || "",
+      subject: raw["subject"] || raw["Subject"] || "",
+      body: raw["body"] || raw["Body"] || "",
+      to: raw["to"] || raw["To"] || "",
     };
 
     return NextResponse.json({ id, email_draft });
