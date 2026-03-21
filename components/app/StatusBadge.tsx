@@ -3,7 +3,7 @@
 import { ActionStatus } from '@/lib/types';
 
 interface StatusBadgeProps {
-  status: ActionStatus;
+  status: ActionStatus | undefined;
   label?: string;
 }
 
@@ -15,7 +15,7 @@ const configs: Record<ActionStatus, { color: string; dot: string; text: string }
 };
 
 export function StatusBadge({ status, label }: StatusBadgeProps) {
-  const c = configs[status];
+  const c = configs[status] ?? configs['idle'];
   return (
     <span
       className="status-badge"
