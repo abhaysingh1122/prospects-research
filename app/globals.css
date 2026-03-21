@@ -13,7 +13,7 @@
   --radius-lg: var(--radius);
 }
 
-/* ─── DARK THEME — default via :root ─── */
+/* â”€â”€â”€ DARK THEME â€” default via :root â”€â”€â”€ */
 :root {
   --bg:#1A1610; --bg2:#151209; --surface:#22201A; --panel:#2C2820; --panel-raised:#333028;
   --ink:#F0EAE0; --ink-2:#C8BFB0; --ink-3:#7A7268; --ink-4:#4A4540;
@@ -35,7 +35,7 @@
   --muted-foreground: oklch(0.708 0 0);
 }
 
-/* ─── LIGHT THEME — overrides :root when data-theme="light" ─── */
+/* â”€â”€â”€ LIGHT THEME â€” overrides :root when data-theme="light" â”€â”€â”€ */
 [data-theme="light"] {
   --bg:#EDE8DF; --bg2:#E6E0D6; --surface:#EEEAE1; --panel:#F4F0E9; --panel-raised:#F8F5EF;
   --ink:#18140E; --ink-2:#3E382E; --ink-3:#7A7368; --ink-4:#B0A89A;
@@ -71,7 +71,7 @@
   h1,h2,h3,h4 { font-family:'Syne',sans-serif; letter-spacing:-.03em; }
 }
 
-/* ─── GLASS TOPBAR ─── */
+/* â”€â”€â”€ GLASS TOPBAR â”€â”€â”€ */
 .topbar {
   position:sticky; top:0; z-index:200;
   background:var(--glass-bg);
@@ -82,7 +82,7 @@
   transition:background .4s,border-color .4s;
 }
 
-/* ─── BRAND TOGGLE (exact from brand system) ─── */
+/* â”€â”€â”€ BRAND TOGGLE (exact from brand system) â”€â”€â”€ */
 .toggle { display:flex; align-items:center; gap:8px; cursor:pointer; user-select:none; }
 .toggle-track {
   width:46px; height:25px;
@@ -109,7 +109,7 @@
   transition:color .3s;
 }
 
-/* ─── NAV LINKS ─── */
+/* â”€â”€â”€ NAV LINKS â”€â”€â”€ */
 .nav-link {
   display:flex; align-items:center; gap:6px;
   font-family:'DM Mono',monospace; font-size:.72rem; font-weight:500;
@@ -127,7 +127,7 @@
 }
 [data-theme="dark"] .nav-link.active { color:#1A1610; }
 
-/* ─── BUTTONS (exact brand) ─── */
+/* â”€â”€â”€ BUTTONS (exact brand) â”€â”€â”€ */
 .btn {
   padding:11px 22px; border:none; border-radius:99px;
   font-family:'DM Mono',monospace; font-size:.74rem; font-weight:500;
@@ -159,18 +159,21 @@
 .btn-ink { background:var(--ink); color:var(--bg); box-shadow:var(--neu-out); }
 .btn-ink:hover { transform:translateY(-2px); }
 
-/* Action buttons (colored bg) */
+/* Action buttons â€” neumorphic pop in/out */
 .btn-action {
-  padding:9px 16px; border:none; border-radius:12px;
-  font-family:'DM Mono',monospace; font-size:.7rem; font-weight:500;
+  padding:11px 16px; border:none; border-radius:var(--radius-md);
+  font-family:'DM Mono',monospace; font-size:.7rem; font-weight:600;
   cursor:pointer; letter-spacing:.03em;
-  display:inline-flex; align-items:center; gap:6px;
-  transition:transform .12s, box-shadow .12s, filter .12s;
+  display:inline-flex; align-items:center; gap:7px;
+  background:linear-gradient(135deg, var(--panel-raised), var(--panel));
+  box-shadow:var(--neu-out);
+  transition:transform .15s, box-shadow .15s;
 }
-.btn-action:active { transform:scale(.95) translateY(1px); filter:brightness(.9); }
-.btn-action:disabled { opacity:.35; cursor:not-allowed; }
+.btn-action:hover { transform:translateY(-2px); box-shadow:7px 9px 18px var(--neu-dark),-4px -4px 10px var(--neu-light); }
+.btn-action:active { transform:scale(.96) translateY(1px); box-shadow:var(--neu-in); }
+.btn-action:disabled { opacity:.35; cursor:not-allowed; box-shadow:var(--neu-in); transform:none; }
 
-/* ─── FIELDS ─── */
+/* â”€â”€â”€ FIELDS â”€â”€â”€ */
 .field { display:flex; flex-direction:column; gap:5px; }
 .field-lbl {
   font-family:'DM Mono',monospace; font-size:.62rem; color:var(--ink-3);
@@ -196,7 +199,7 @@
   color:var(--ink-3); pointer-events:none;
 }
 
-/* ─── CARDS ─── */
+/* â”€â”€â”€ CARDS â”€â”€â”€ */
 .neu-card {
   background:var(--panel);
   border-radius:var(--radius-md);
@@ -210,7 +213,7 @@
   transition:background .4s,box-shadow .4s;
 }
 
-/* ─── STAT CARDS (brand style) ─── */
+/* â”€â”€â”€ STAT CARDS (brand style) â”€â”€â”€ */
 .stat-card {
   border-radius:var(--radius-md); padding:20px 18px;
   box-shadow:var(--neu-out);
@@ -228,11 +231,11 @@
 .stat-val { font-family:'Syne',sans-serif; font-size:1.65rem; font-weight:800; line-height:1; position:relative; z-index:1; }
 .stat-sub { font-family:'DM Mono',monospace; font-size:.62rem; color:var(--ink-3); margin-top:5px; position:relative; z-index:1; }
 
-/* ─── TABLE ROW ─── */
+/* â”€â”€â”€ TABLE ROW â”€â”€â”€ */
 .record-row { transition:background .15s; }
 .record-row:hover { background:var(--panel-raised) !important; }
 
-/* ─── TAGS / PILLS ─── */
+/* â”€â”€â”€ TAGS / PILLS â”€â”€â”€ */
 .tag {
   font-family:'DM Mono',monospace; font-size:.6rem;
   padding:3px 10px; border-radius:99px;
@@ -255,7 +258,7 @@
   transition:background .3s,color .3s;
 }
 
-/* ─── FILTER PILLS ─── */
+/* â”€â”€â”€ FILTER PILLS â”€â”€â”€ */
 .filter-pill {
   font-family:'DM Mono',monospace; font-size:.68rem; font-weight:500;
   padding:7px 16px; border-radius:99px;
@@ -268,13 +271,13 @@
 .filter-pill:active { box-shadow:var(--neu-in); transform:translateY(0); }
 .filter-pill.active { background:var(--accent); color:#18140E; box-shadow:3px 3px 8px rgba(140,110,30,.4),-2px -2px 6px rgba(255,245,190,.45); }
 
-/* ─── SCROLLBAR ─── */
+/* â”€â”€â”€ SCROLLBAR â”€â”€â”€ */
 ::-webkit-scrollbar { width:5px; height:5px; }
 ::-webkit-scrollbar-track { background:var(--bg); }
 ::-webkit-scrollbar-thumb { background:var(--ink-4); border-radius:99px; }
 ::-webkit-scrollbar-thumb:hover { background:var(--ink-3); }
 
-/* ─── ANIMATIONS ─── */
+/* â”€â”€â”€ ANIMATIONS â”€â”€â”€ */
 @keyframes rise { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
 @keyframes stripe { to{background-position:20px 0} }
@@ -289,7 +292,7 @@
   animation:pulse 1.4s ease-in-out infinite;
 }
 
-/* ─── STATUS DOT ─── */
+/* â”€â”€â”€ STATUS DOT â”€â”€â”€ */
 .status-dot {
   display:inline-flex; align-items:center; gap:7px;
   font-family:'DM Mono',monospace; font-size:.75rem;
