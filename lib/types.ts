@@ -1,7 +1,7 @@
 export type ActionStatus = 'idle' | 'loading' | 'done' | 'error';
 
 export type CompanyRecord = {
-  id: string;           // UUID — stable, frontend-generated (Interface ID)
+  id: string;           // UUID â€” stable, frontend-generated (Interface ID)
   company_name: string;
   linkedin_url: string;
   website_url?: string;
@@ -32,6 +32,29 @@ export type CompanyRecord = {
   // Competitor Research
   competitor_status: ActionStatus;
   competitor_error?: string;
+  competitor_data?: {
+    // Company Analysis
+    company_size?: string;
+    business_model?: string;
+    target_market?: string;
+    company_values?: string;
+    products?: string;
+    industries_served?: string;
+    pain_points?: string;
+    outreach_angle?: string;
+    recent_news?: string;
+    real_matrix?: string;
+    // Competitor Analysis
+    competitor_name?: string;
+    competitor_website?: string;
+    competitor_description?: string;
+    competitor_market_position?: string;
+    competitor_difference?: string;
+    competitor_strength?: string;
+    gap_opportunities?: string;
+    recommendation_summary?: string;
+    competitive_summary?: string;
+  };
 
   // Email
   email_status: ActionStatus;
