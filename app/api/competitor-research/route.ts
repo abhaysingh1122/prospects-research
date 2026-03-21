@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const N8N_COMPETITOR_WEBHOOK = process.env.N8N_COMPETITOR_WEBHOOK_URL || "";
+// Same webhook as research — n8n Switch routes by action field
+const N8N_COMPETITOR_WEBHOOK = process.env.N8N_RESEARCH_WEBHOOK_URL || "";
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,7 +13,7 @@ export async function POST(req: NextRequest) {
     }
 
     const payload = {
-      action: "competitor_research",
+      action: "competitor research",
       id,
       timestamp: new Date().toISOString(),
     };
