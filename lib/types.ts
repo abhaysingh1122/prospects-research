@@ -56,17 +56,13 @@ export type CompanyRecord = {
     competitive_summary?: string;
   };
 
-  // Enrich (Lead enrichment)
+  // Generate Strategy
   enrich_status: ActionStatus;
   enrich_data?: {
-    leads?: Array<{
-      name?: string;
-      title?: string;
-      email?: string;
-      linkedin?: string;
-      phone?: string;
-    }>;
-    enrichment_summary?: string;
+    full_analysis?: string;
+    pain_points?: string;
+    solutions?: string;
+    strategy_hooks?: string;
   };
   enrich_error?: string;
 
