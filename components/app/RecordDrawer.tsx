@@ -526,58 +526,76 @@ function CompetitorContent({ record }: { record: CompanyRecord }) {
 }
 
 function EnrichContent({ record }: { record: CompanyRecord }) {
+  const [view, setView] = useState<'analysis' | 'painpoints' | 'hooks'>('analysis');
+
   if (record.enrich_status === 'idle') return (
-    <Empty icon={<Users size={28} />} text="Click Enrich to find leads and contacts" />
+    <Empty icon={<Users size={28} />} text="Click Generate Strategy to run full analysis" />
   );
   if (record.enrich_status === 'loading') return (
-    <Loading color="var(--blue)" text="Enriching leads..." />
+    <Loading color="var(--blue)" text="Generating strategy..." />
   );
   if (record.enrich_status === 'error') return (
-    <ErrorBox text={record.enrich_error || 'Enrichment failed'} />
+    <ErrorBox text={record.enrich_error || 'Strategy generation failed'} />
   );
 
   const d = record.enrich_data;
   if (!d) return (
-    <Empty icon={<Users size={28} />} text="No enrichment data available" />
+    <Empty icon={<Users size={28} />} text="No strategy data available" />
   );
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
 
-      {d.enrichment_summary && (
-        <DataBox label="Summary">
-          <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '.82rem', color: 'var(--blue)', lineHeight: 1.7, fontStyle: 'italic' }}>{d.enrichment_summary}</p>
+      {/* Sub-filter pills */}
+      <div style={{ display: 'flex', gap: '6px', marginBottom: '4px' }}>
+        {([
+          { id: 'analysis' as const, label: 'Full Analysis' },
+          { id: 'painpoints' as const, label: 'Pain Points & Solutions' },
+          { id: 'hooks' as const, label: 'Strategy Hooks' },
+        ]).map((v) => {
+          const active = view === v.id;
+          return (
+            <button key={v.id} onClick={() => setView(v.id)}
+              style={{
+                fontFamily: 'DM Mono, monospace', fontSize: '.6rem', fontWeight: 500,
+                padding: '5px 12px', borderRadius: '20px', cursor: 'pointer',
+                border: active ? '1px solid var(--accent)' : '1px solid var(--glass-border)',
+                background: active ? 'var(--accent)' : 'transparent',
+                color: active ? 'var(--panel)' : 'var(--ink-3)',
+                transition: 'all .15s',
+              }}
+            >{v.label}</button>
+          );
+        })}
+      </div>
+
+      {/* Full Analysis */}
+      {view === 'analysis' && d.full_analysis && (
+        <DataBox label="Intelligence Report">
+          <MarkdownBlock text={d.full_analysis} />
         </DataBox>
       )}
 
-      {(d.leads?.length ?? 0) > 0 && (
-        <DataBox label={`Leads (${d.leads!.length})`}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {d.leads!.map((lead, i) => (
-              <div key={i} style={{ padding: '10px 12px', background: 'var(--panel)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--glass-border)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-                  <p style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '.85rem', color: 'var(--ink)' }}>{lead.name || 'Unknown'}</p>
-                  {lead.linkedin && (
-                    <a href={lead.linkedin} target="_blank" rel="noopener noreferrer"
-                      style={{ display: 'flex', alignItems: 'center', gap: '4px', fontFamily: 'DM Mono, monospace', fontSize: '.58rem', color: 'var(--blue)', textDecoration: 'underline', textUnderlineOffset: '2px' }}>
-                      <ExternalLink size={9} />LinkedIn
-                    </a>
-                  )}
-                </div>
-                {lead.title && (
-                  <p style={{ fontFamily: 'DM Mono, monospace', fontSize: '.65rem', color: 'var(--ink-3)', marginBottom: '6px' }}>{lead.title}</p>
-                )}
-                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                  {lead.email && (
-                    <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '.62rem', color: 'var(--ink-2)' }}>{lead.email}</span>
-                  )}
-                  {lead.phone && (
-                    <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '.62rem', color: 'var(--ink-2)' }}>{lead.phone}</span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
+      {/* Pain Points & Solutions â€” interleaved */}
+      {view === 'painpoints' && (
+        <>
+          {d.pain_points && (
+            <DataBox label="Pain Points">
+              <MarkdownBlock text={d.pain_points} />
+            </DataBox>
+          )}
+          {d.solutions && (
+            <DataBox label="Solutions">
+              <MarkdownBlock text={d.solutions} />
+            </DataBox>
+          )}
+        </>
+      )}
+
+      {/* Strategy Hooks */}
+      {view === 'hooks' && d.strategy_hooks && (
+        <DataBox label="Engagement Framework">
+          <MarkdownBlock text={d.strategy_hooks} />
         </DataBox>
       )}
 
@@ -586,6 +604,134 @@ function EnrichContent({ record }: { record: CompanyRecord }) {
 }
 
 /* â”€â”€â”€ Helpers â”€â”€â”€ */
+
+/** Render markdown-formatted text with headers, bold, bullets, and dividers */
+function MarkdownBlock({ text }: { text: string }) {
+  const lines = text.split('\n');
+  const elements: React.ReactNode[] = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i];
+    const trimmed = line.trim();
+
+    // Empty line â€” skip
+    if (!trimmed) { i++; continue; }
+
+    // Horizontal rule
+    if (/^---+$/.test(trimmed)) {
+      elements.push(<div key={i} style={{ height: '1px', background: 'var(--glass-border)', margin: '12px 0' }} />);
+      i++; continue;
+    }
+
+    // H1
+    if (trimmed.startsWith('# ')) {
+      elements.push(
+        <h3 key={i} style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: '.95rem', color: 'var(--ink)', margin: '14px 0 6px' }}>
+          {formatInline(trimmed.slice(2))}
+        </h3>
+      );
+      i++; continue;
+    }
+
+    // H2
+    if (trimmed.startsWith('## ')) {
+      elements.push(
+        <h4 key={i} style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: '.82rem', color: 'var(--accent)', margin: '12px 0 4px' }}>
+          {formatInline(trimmed.slice(3))}
+        </h4>
+      );
+      i++; continue;
+    }
+
+    // H3
+    if (trimmed.startsWith('### ')) {
+      elements.push(
+        <h5 key={i} style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '.78rem', color: 'var(--ink-2)', margin: '10px 0 3px' }}>
+          {formatInline(trimmed.slice(4))}
+        </h5>
+      );
+      i++; continue;
+    }
+
+    // Bullet list item
+    if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+      elements.push(
+        <div key={i} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', marginBottom: '3px' }}>
+          <span style={{ color: 'var(--teal)', flexShrink: 0, marginTop: '2px', fontSize: '.7rem' }}>â€¢</span>
+          <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '.78rem', color: 'var(--ink-2)', lineHeight: 1.6 }}>
+            {formatInline(trimmed.slice(2))}
+          </span>
+        </div>
+      );
+      i++; continue;
+    }
+
+    // Numbered list
+    if (/^\d+\.\s/.test(trimmed)) {
+      const num = trimmed.match(/^(\d+)\.\s/)![1];
+      const content = trimmed.replace(/^\d+\.\s/, '');
+      elements.push(
+        <div key={i} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', marginBottom: '3px' }}>
+          <span style={{ color: 'var(--blue)', flexShrink: 0, fontFamily: 'DM Mono, monospace', fontSize: '.65rem', marginTop: '2px' }}>{num}.</span>
+          <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '.78rem', color: 'var(--ink-2)', lineHeight: 1.6 }}>
+            {formatInline(content)}
+          </span>
+        </div>
+      );
+      i++; continue;
+    }
+
+    // Regular paragraph
+    elements.push(
+      <p key={i} style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '.78rem', color: 'var(--ink-2)', lineHeight: 1.7, margin: '3px 0' }}>
+        {formatInline(trimmed)}
+      </p>
+    );
+    i++;
+  }
+
+  return <div>{elements}</div>;
+}
+
+/** Parse **bold** and `code` inline formatting */
+function formatInline(text: string): React.ReactNode {
+  const parts: React.ReactNode[] = [];
+  let remaining = text;
+  let key = 0;
+
+  while (remaining.length > 0) {
+    // Bold
+    const boldMatch = remaining.match(/\*\*(.+?)\*\*/);
+    // Code
+    const codeMatch = remaining.match(/`(.+?)`/);
+
+    // Find the earliest match
+    const boldIdx = boldMatch?.index ?? Infinity;
+    const codeIdx = codeMatch?.index ?? Infinity;
+
+    if (boldIdx === Infinity && codeIdx === Infinity) {
+      parts.push(remaining);
+      break;
+    }
+
+    if (boldIdx <= codeIdx && boldMatch) {
+      if (boldIdx > 0) parts.push(remaining.slice(0, boldIdx));
+      parts.push(<strong key={key++} style={{ fontWeight: 700, color: 'var(--ink)' }}>{boldMatch[1]}</strong>);
+      remaining = remaining.slice(boldIdx + boldMatch[0].length);
+    } else if (codeMatch) {
+      if (codeIdx > 0) parts.push(remaining.slice(0, codeIdx));
+      parts.push(
+        <code key={key++} style={{ fontFamily: 'DM Mono, monospace', fontSize: '.7rem', background: 'var(--surface)', padding: '1px 5px', borderRadius: '3px', color: 'var(--accent)' }}>
+          {codeMatch[1]}
+        </code>
+      );
+      remaining = remaining.slice(codeIdx + codeMatch[0].length);
+    }
+  }
+
+  return parts.length === 1 && typeof parts[0] === 'string' ? parts[0] : <>{parts}</>;
+}
 
 /** Uniform box: label on top, content below â€” used for ALL data fields */
 function DataBox({ label, children }: { label: string; children: React.ReactNode }) {
