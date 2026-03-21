@@ -29,6 +29,7 @@ export function AddCompanyForm({ onAdd }: AddCompanyFormProps) {
       created_at: new Date().toISOString(),
       research_status: 'idle',
       competitor_status: 'idle',
+      enrich_status: 'idle',
       email_status: 'idle',
       send_status: 'idle',
     };
@@ -54,7 +55,7 @@ export function AddCompanyForm({ onAdd }: AddCompanyFormProps) {
           Research a Company
         </h2>
         <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '.84rem', color: 'var(--ink-3)', marginTop: '5px', fontWeight: 300 }}>
-          Drop in the details — AI handles the rest.
+          Drop in the details â€” AI handles the rest.
         </p>
       </div>
 
