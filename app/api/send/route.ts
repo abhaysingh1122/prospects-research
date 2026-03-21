@@ -46,10 +46,12 @@ export async function POST(req: NextRequest) {
     const item = Array.isArray(rawJson) ? rawJson[0] : rawJson;
     const raw = (item && typeof item === 'object' && 'json' in item && typeof item.json === 'object') ? item.json : item;
 
+    // n8n returns: { "Message id": "rec...", "Status": "SENT" }
     return NextResponse.json({
       id,
-      sent_at: raw["sent_at"] || raw["Sent At"] || new Date().toISOString(),
-      message_id: raw["message_id"] || raw["Message ID"] || raw["messageId"] || "",
+      sent_at: new Date().toISOString(),
+      message_id: raw["Message id"] || raw["Message ID"] || raw["message_id"] || raw["messageId"] || "",
+      status: raw["Status"] || raw["status"] || "SENT",
     });
   } catch (err) {
     console.error("[send-email]", err);
