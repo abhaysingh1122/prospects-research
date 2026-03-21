@@ -56,6 +56,20 @@ export type CompanyRecord = {
     competitive_summary?: string;
   };
 
+  // Enrich (Lead enrichment)
+  enrich_status: ActionStatus;
+  enrich_data?: {
+    leads?: Array<{
+      name?: string;
+      title?: string;
+      email?: string;
+      linkedin?: string;
+      phone?: string;
+    }>;
+    enrichment_summary?: string;
+  };
+  enrich_error?: string;
+
   // Email
   email_status: ActionStatus;
   email_draft?: {
