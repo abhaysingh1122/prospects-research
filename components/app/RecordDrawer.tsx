@@ -147,7 +147,7 @@ export function RecordDrawer({ record, onClose, onUpdate, onDelete }: RecordDraw
         <div style={{ display: 'flex', gap: '8px', padding: '14px 20px', borderBottom: '1px solid var(--glass-border)', flexShrink: 0 }}>
           <ActionBtn icon={<Search size={13} />} label="Company Research" status={record.research_status} onClick={handleResearch} color="var(--teal)" />
           <ActionBtn icon={<Building2 size={13} />} label="Competitor Research" status={record.competitor_status} onClick={handleCompetitor} color="var(--purple)" />
-          <ActionBtn icon={<Users size={13} />} label="Enrich" status={record.enrich_status} onClick={handleEnrich} color="var(--blue)" />
+          <ActionBtn icon={<Users size={13} />} label="Generate Strategy" status={record.enrich_status} onClick={handleEnrich} color="var(--blue)" />
         </div>
 
         {/* Tabs */}
@@ -155,7 +155,7 @@ export function RecordDrawer({ record, onClose, onUpdate, onDelete }: RecordDraw
           {([
             { id: 'research' as const, label: 'Company Research', status: record.research_status },
             { id: 'competitor' as const, label: 'Competitor Research', status: record.competitor_status },
-            { id: 'enrich' as const, label: 'Enrich', status: record.enrich_status },
+            { id: 'enrich' as const, label: 'Generate Strategy', status: record.enrich_status },
           ]).map((t) => (
             <button key={t.id} onClick={() => setTab(t.id)}
               style={{
