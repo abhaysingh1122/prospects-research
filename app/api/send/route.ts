@@ -1,40 +1,57 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const N8N_SEND_WEBHOOK = process.env.N8N_SEND_WEBHOOK_URL || "";
+// Same webhook â€” n8n Switch routes by action field
+const N8N_WEBHOOK = process.env.N8N_RESEARCH_WEBHOOK_URL || "";
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { id, company_name, email_draft } = body;
+    const { id, to, subject, body: emailBody } = body;
 
-    if (!id || !email_draft) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    if (!id || !to || !subject) {
+      return NextResponse.json({ error: "Missing required fields: id, to, subject" }, { status: 400 });
     }
 
-    if (!N8N_SEND_WEBHOOK) {
-      // Dev mode: simulate send
-      await new Promise((r) => setTimeout(r, 1000));
+    const payload = {
+      action: "send email",
+      id,
+      to,
+      subject,
+      body: emailBody,
+      timestamp: new Date().toISOString(),
+    };
+
+    if (!N8N_WEBHOOK) {
+      // Dev mode mock
+      await new Promise((r) => setTimeout(r, 1500));
       return NextResponse.json({
         id,
         sent_at: new Date().toISOString(),
-        message: "Email sent successfully (dev mode)",
+        message_id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
       });
     }
 
-    const n8nRes = await fetch(N8N_SEND_WEBHOOK, {
+    const n8nRes = await fetch(N8N_WEBHOOK, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, company_name, email_draft }),
+      body: JSON.stringify(payload),
     });
 
     if (!n8nRes.ok) {
-      throw new Error(`n8n webhook failed: ${n8nRes.status}`);
+      const errText = await n8nRes.text().catch(() => n8nRes.status.toString());
+      throw new Error(`n8n returned ${n8nRes.status}: ${errText}`);
     }
 
-    const data = await n8nRes.json();
-    return NextResponse.json({ id, sent_at: new Date().toISOString(), ...data });
+    const rawJson = await n8nRes.json();
+    const raw = Array.isArray(rawJson) ? rawJson[0] : rawJson;
+
+    return NextResponse.json({
+      id,
+      sent_at: raw["sent_at"] || raw["Sent At"] || new Date().toISOString(),
+      message_id: raw["message_id"] || raw["Message ID"] || raw["messageId"] || "",
+    });
   } catch (err) {
-    console.error("Send error:", err);
+    console.error("[send-email]", err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Send failed" },
       { status: 500 }
