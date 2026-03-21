@@ -1,50 +1,59 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const N8N_EMAIL_WEBHOOK = process.env.N8N_EMAIL_WEBHOOK_URL || "";
+// Same webhook â€” n8n Switch routes by action field
+const N8N_WEBHOOK = process.env.N8N_RESEARCH_WEBHOOK_URL || "";
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { id, company_name, linkedin_url, research_data } = body;
+    const { id } = body;
 
-    if (!id || !company_name) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    if (!id) {
+      return NextResponse.json({ error: "Missing required field: id" }, { status: 400 });
     }
 
-    if (!N8N_EMAIL_WEBHOOK) {
-      // Dev mode: return mock email draft
+    const payload = {
+      action: "draft email",
+      id,
+      timestamp: new Date().toISOString(),
+    };
+
+    if (!N8N_WEBHOOK) {
+      // Dev mode mock
       await new Promise((r) => setTimeout(r, 1500));
       return NextResponse.json({
         id,
-        subject: `Partnership opportunity with ${company_name}`,
-        body: `Hi [Contact Name],
-
-I came across ${company_name} and was impressed by your work in ${research_data?.industry || "your industry"}.
-
-I'd love to explore how we could collaborate on [specific opportunity]. Your recent [recent achievement] caught my attention.
-
-Would you be open to a 20-minute call this week?
-
-Best,
-Abhay`,
-        to: "",
+        email_draft: {
+          subject: "Partnership opportunity â€” let's connect",
+          body: "Hi [Contact Name],\n\nI came across your company and was impressed by your work in the data security space.\n\nI'd love to explore how we could collaborate. Your recent Gartner recognition caught my attention, and I think there's a strong fit between our capabilities.\n\nWould you be open to a 20-minute call this week?\n\nBest,\nAbhay",
+          to: "contact@example.com",
+        },
       });
     }
 
-    const n8nRes = await fetch(N8N_EMAIL_WEBHOOK, {
+    const n8nRes = await fetch(N8N_WEBHOOK, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, company_name, linkedin_url, research_data }),
+      body: JSON.stringify(payload),
     });
 
     if (!n8nRes.ok) {
-      throw new Error(`n8n webhook failed: ${n8nRes.status}`);
+      const errText = await n8nRes.text().catch(() => n8nRes.status.toString());
+      throw new Error(`n8n returned ${n8nRes.status}: ${errText}`);
     }
 
-    const data = await n8nRes.json();
-    return NextResponse.json({ id, ...data });
+    const rawJson = await n8nRes.json();
+    const raw = Array.isArray(rawJson) ? rawJson[0] : rawJson;
+
+    const email_draft = {
+      subject: raw["Subject"] || raw["subject"] || "",
+      body: raw["Body"] || raw["body"] || "",
+      to: raw["To"] || raw["to"] || "",
+    };
+
+    return NextResponse.json({ id, email_draft });
   } catch (err) {
-    console.error("Email draft error:", err);
+    console.error("[draft-email]", err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Email draft failed" },
       { status: 500 }
