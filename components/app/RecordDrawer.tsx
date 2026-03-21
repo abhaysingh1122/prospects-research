@@ -201,7 +201,7 @@ export function RecordDrawer({ record, onClose, onUpdate, onDelete }: RecordDraw
           {tab === 'research' && <ResearchContent record={record} />}
           {tab === 'competitor' && <CompetitorContent record={record} />}
           {tab === 'enrich' && <EnrichContent record={record} />}
-          {tab === 'email' && <EmailContent record={record} />}
+          {tab === 'email' && <EmailContent record={record} onUpdate={onUpdate} />}
         </div>
       </div>
     </div>
@@ -622,7 +622,26 @@ function EnrichContent({ record }: { record: CompanyRecord }) {
   );
 }
 
-function EmailContent({ record }: { record: CompanyRecord }) {
+function EmailContent({ record, onUpdate }: { record: CompanyRecord; onUpdate: (r: CompanyRecord) => void }) {
+  const [subject, setSubject] = useState('');
+  const [body, setBody] = useState('');
+  const [to, setTo] = useState('');
+  const [initialized, setInitialized] = useState(false);
+
+  // Sync local state when draft loads
+  const d = record.email_draft;
+  if (d && !initialized) {
+    setSubject(d.subject || '');
+    setBody(d.body || '');
+    setTo(d.to || '');
+    setInitialized(true);
+  }
+
+  function saveEdits() {
+    onUpdate({ ...record, email_draft: { subject, body, to: to || undefined } });
+    toast.success('Email draft saved');
+  }
+
   if (record.email_status === 'idle') return (
     <Empty icon={<Mail size={28} />} text="Click Draft Email to generate an outreach email" />
   );
@@ -633,31 +652,46 @@ function EmailContent({ record }: { record: CompanyRecord }) {
     <ErrorBox text={record.email_error || 'Email draft failed'} />
   );
 
-  const d = record.email_draft;
   if (!d) return (
     <Empty icon={<Mail size={28} />} text="No email draft available" />
   );
 
+  const inputStyle: React.CSSProperties = {
+    width: '100%', padding: '10px 12px', border: 'none', borderRadius: 'var(--radius-sm)',
+    background: 'var(--panel)', boxShadow: 'var(--neu-in)',
+    fontFamily: 'DM Sans, sans-serif', fontSize: '.82rem', color: 'var(--ink)',
+    outline: 'none', resize: 'none' as const,
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
 
-      {d.to && (
-        <DataBox label="To">
-          <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '.75rem', color: 'var(--ink-2)' }}>{d.to}</span>
-        </DataBox>
-      )}
+      <DataBox label="To">
+        <input
+          type="text" value={to} onChange={(e) => setTo(e.target.value)} onBlur={saveEdits}
+          placeholder="recipient@company.com"
+          style={{ ...inputStyle, fontSize: '.75rem', fontFamily: 'DM Mono, monospace' }}
+        />
+      </DataBox>
 
       <DataBox label="Subject">
-        <span style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '.88rem', color: 'var(--ink)' }}>{d.subject}</span>
+        <input
+          type="text" value={subject} onChange={(e) => setSubject(e.target.value)} onBlur={saveEdits}
+          style={{ ...inputStyle, fontWeight: 700, fontSize: '.88rem' }}
+        />
       </DataBox>
 
       <DataBox label="Body">
-        <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '.82rem', color: 'var(--ink-2)', lineHeight: 1.8, whiteSpace: 'pre-line' }}>{d.body}</p>
+        <textarea
+          value={body} onChange={(e) => setBody(e.target.value)} onBlur={saveEdits}
+          rows={12}
+          style={{ ...inputStyle, lineHeight: 1.8 }}
+        />
       </DataBox>
 
       <button
         onClick={() => {
-          navigator.clipboard.writeText(`Subject: ${d.subject}\n\n${d.body}`);
+          navigator.clipboard.writeText(`Subject: ${subject}\n\n${body}`);
           toast.success('Email copied to clipboard');
         }}
         className="btn-action"
