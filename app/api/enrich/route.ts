@@ -44,7 +44,8 @@ export async function POST(req: NextRequest) {
     }
 
     const rawJson = await n8nRes.json();
-    const raw = Array.isArray(rawJson) ? rawJson[0] : rawJson;
+    const item = Array.isArray(rawJson) ? rawJson[0] : rawJson;
+    const raw = (item && typeof item === 'object' && 'json' in item && typeof item.json === 'object') ? item.json : item;
 
     const enrich_data = {
       full_analysis: raw["Full Data Analysis"],
