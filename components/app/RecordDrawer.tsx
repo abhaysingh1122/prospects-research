@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { CompanyRecord, ActionStatus } from '@/lib/types';
 import { StatusBadge } from './StatusBadge';
-import { X, Search, Trash2, ExternalLink, Building2, Users, Globe, Briefcase, Copy, Check } from 'lucide-react';
+import { X, Search, Trash2, ExternalLink, Building2, Users, Globe, Briefcase, Copy, Check, Maximize2, Minimize2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface RecordDrawerProps {
@@ -15,6 +15,7 @@ interface RecordDrawerProps {
 
 export function RecordDrawer({ record, onClose, onUpdate, onDelete }: RecordDrawerProps) {
   const [tab, setTab] = useState<'research' | 'competitor'>('research');
+  const [expanded, setExpanded] = useState(false);
 
   if (!record) return null;
 
@@ -82,11 +83,12 @@ export function RecordDrawer({ record, onClose, onUpdate, onDelete }: RecordDraw
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div style={{
-        width: '520px', maxWidth: '100vw', height: '100vh',
+        width: expanded ? '100vw' : '520px', maxWidth: '100vw', height: '100vh',
         background: 'var(--panel)',
-        borderLeft: '1px solid var(--glass-border)',
-        boxShadow: '-8px 0 40px rgba(0,0,0,.5)',
+        borderLeft: expanded ? 'none' : '1px solid var(--glass-border)',
+        boxShadow: expanded ? 'none' : '-8px 0 40px rgba(0,0,0,.5)',
         display: 'flex', flexDirection: 'column', overflow: 'hidden',
+        transition: 'width .3s ease',
       }}>
         {/* Header */}
         <div style={{ padding: '18px 20px', borderBottom: '1px solid var(--glass-border)', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexShrink: 0 }}>
@@ -109,6 +111,9 @@ export function RecordDrawer({ record, onClose, onUpdate, onDelete }: RecordDraw
             </div>
           </div>
           <div style={{ display: 'flex', gap: '6px', flexShrink: 0, marginLeft: '12px' }}>
+            <button onClick={() => setExpanded(!expanded)} style={{ padding: '6px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ink-3)', borderRadius: '8px' }} title={expanded ? 'Collapse' : 'Full screen'}>
+              {expanded ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+            </button>
             <button onClick={() => { onDelete(record.id); onClose(); }} style={{ padding: '6px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--red)', borderRadius: '8px' }} title="Delete">
               <Trash2 size={14} />
             </button>
@@ -313,6 +318,8 @@ function ResearchContent({ record }: { record: CompanyRecord }) {
 
 
 function CompetitorContent({ record }: { record: CompanyRecord }) {
+  const [view, setView] = useState<'all' | 'company' | 'competitor'>('all');
+
   if (record.competitor_status === 'idle') return (
     <Empty icon={<Building2 size={28} />} text="Click Competitor Research to trigger analysis" />
   );
@@ -328,11 +335,34 @@ function CompetitorContent({ record }: { record: CompanyRecord }) {
     <Empty icon={<Building2 size={28} />} text="No competitor data available" />
   );
 
+  const showCompany = view === 'all' || view === 'company';
+  const showCompetitor = view === 'all' || view === 'competitor';
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
 
+      {/* â”€â”€ Sub-filter pills â”€â”€ */}
+      <div style={{ display: 'flex', gap: '6px', marginBottom: '4px' }}>
+        {(['all', 'company', 'competitor'] as const).map((v) => {
+          const labels = { all: 'All', company: 'Company Analysis', competitor: 'Competitor Analysis' };
+          const active = view === v;
+          return (
+            <button key={v} onClick={() => setView(v)}
+              style={{
+                fontFamily: 'DM Mono, monospace', fontSize: '.6rem', fontWeight: 500,
+                padding: '5px 12px', borderRadius: '20px', cursor: 'pointer',
+                border: active ? '1px solid var(--accent)' : '1px solid var(--glass-border)',
+                background: active ? 'var(--accent)' : 'transparent',
+                color: active ? 'var(--panel)' : 'var(--ink-3)',
+                transition: 'all .15s',
+              }}
+            >{labels[v]}</button>
+          );
+        })}
+      </div>
+
       {/* â”€â”€ Section 1: Company Analysis â”€â”€ */}
-      {(d.company_size || d.business_model) && (
+      {showCompany && (d.company_size || d.business_model) && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
           {d.company_size && (
             <DataBox label="Company Size">
@@ -347,65 +377,67 @@ function CompetitorContent({ record }: { record: CompanyRecord }) {
         </div>
       )}
 
-      {d.target_market && (
+      {showCompany && d.target_market && (
         <DataBox label="Target Market">
           <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '.82rem', color: 'var(--ink-2)', lineHeight: 1.7 }}>{d.target_market}</p>
         </DataBox>
       )}
 
-      {d.company_values && (
+      {showCompany && d.company_values && (
         <DataBox label="Company Values">
           <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '.82rem', color: 'var(--ink-2)', lineHeight: 1.7 }}>{d.company_values}</p>
         </DataBox>
       )}
 
-      {d.products && (
+      {showCompany && d.products && (
         <DataBox label="Products">
           <BulletList text={d.products} />
         </DataBox>
       )}
 
-      {d.industries_served && (
+      {showCompany && d.industries_served && (
         <DataBox label="Industries Served">
           <p style={{ fontFamily: 'DM Mono, monospace', fontSize: '.72rem', color: 'var(--ink-2)', lineHeight: 1.6 }}>{d.industries_served}</p>
         </DataBox>
       )}
 
-      {d.pain_points && (
+      {showCompany && d.pain_points && (
         <DataBox label="Pain Points">
           <BulletList text={d.pain_points} />
         </DataBox>
       )}
 
-      {d.outreach_angle && (
+      {showCompany && d.outreach_angle && (
         <DataBox label="Outreach Angle">
           <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '.82rem', color: 'var(--purple)', lineHeight: 1.7, fontStyle: 'italic' }}>{d.outreach_angle}</p>
         </DataBox>
       )}
 
-      {d.recent_news && (
+      {showCompany && d.recent_news && (
         <DataBox label="Recent News">
           <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '.82rem', color: 'var(--ink-2)', lineHeight: 1.7 }}>{d.recent_news}</p>
         </DataBox>
       )}
 
-      {d.real_matrix && (
+      {showCompany && d.real_matrix && (
         <DataBox label="Real Matrix">
           <BulletList text={d.real_matrix} />
         </DataBox>
       )}
 
-      {/* â”€â”€ Section Divider â”€â”€ */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '6px 0' }}>
-        <div style={{ flex: 1, height: '1px', background: 'var(--glass-border)' }} />
-        <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '.52rem', color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: '.12em', flexShrink: 0 }}>
-          Competitor Analysis
-        </span>
-        <div style={{ flex: 1, height: '1px', background: 'var(--glass-border)' }} />
-      </div>
+      {/* â”€â”€ Section Divider â€” only when both visible â”€â”€ */}
+      {view === 'all' && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '6px 0' }}>
+          <div style={{ flex: 1, height: '1px', background: 'var(--glass-border)' }} />
+          <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '.52rem', color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: '.12em', flexShrink: 0 }}>
+            Competitor Analysis
+          </span>
+          <div style={{ flex: 1, height: '1px', background: 'var(--glass-border)' }} />
+        </div>
+      )}
 
       {/* â”€â”€ Section 2: Competitor Analysis â”€â”€ */}
-      {(d.competitor_name || d.competitor_website) && (
+      {showCompetitor && (d.competitor_name || d.competitor_website) && (
         <DataBox label="Competitor">
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
             {d.competitor_name && (
@@ -422,43 +454,43 @@ function CompetitorContent({ record }: { record: CompanyRecord }) {
         </DataBox>
       )}
 
-      {d.competitor_description && (
+      {showCompetitor && d.competitor_description && (
         <DataBox label="Competitor Description">
           <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '.82rem', color: 'var(--ink-2)', lineHeight: 1.7 }}>{d.competitor_description}</p>
         </DataBox>
       )}
 
-      {d.competitor_market_position && (
+      {showCompetitor && d.competitor_market_position && (
         <DataBox label="Market Position">
           <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '.82rem', color: 'var(--ink-2)', lineHeight: 1.7 }}>{d.competitor_market_position}</p>
         </DataBox>
       )}
 
-      {d.competitor_difference && (
+      {showCompetitor && d.competitor_difference && (
         <DataBox label="Key Differences">
           <BulletList text={d.competitor_difference} />
         </DataBox>
       )}
 
-      {d.competitor_strength && (
+      {showCompetitor && d.competitor_strength && (
         <DataBox label="Competitor Strengths">
           <BulletList text={d.competitor_strength} />
         </DataBox>
       )}
 
-      {d.gap_opportunities && (
+      {showCompetitor && d.gap_opportunities && (
         <DataBox label="Gap Opportunities">
           <BulletList text={d.gap_opportunities} />
         </DataBox>
       )}
 
-      {d.recommendation_summary && (
+      {showCompetitor && d.recommendation_summary && (
         <DataBox label="Recommendation">
           <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '.82rem', color: 'var(--orange, var(--red))', lineHeight: 1.7, fontStyle: 'italic' }}>{d.recommendation_summary}</p>
         </DataBox>
       )}
 
-      {d.competitive_summary && (
+      {showCompetitor && d.competitive_summary && (
         <DataBox label="Competitive Summary">
           <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '.82rem', color: 'var(--ink-2)', lineHeight: 1.7 }}>{d.competitive_summary}</p>
         </DataBox>
