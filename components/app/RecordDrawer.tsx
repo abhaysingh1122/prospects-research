@@ -153,9 +153,9 @@ export function RecordDrawer({ record, onClose, onUpdate, onDelete }: RecordDraw
         {/* Tabs */}
         <div style={{ display: 'flex', borderBottom: '1px solid var(--glass-border)', flexShrink: 0 }}>
           {([
-            { id: 'research' as const, label: 'Company Research', status: record.research_status },
-            { id: 'competitor' as const, label: 'Competitor Research', status: record.competitor_status },
-            { id: 'enrich' as const, label: 'Generate Strategy', status: record.enrich_status },
+            { id: 'research' as const, label: 'Research', status: record.research_status },
+            { id: 'competitor' as const, label: 'Competitor', status: record.competitor_status },
+            { id: 'enrich' as const, label: 'Strategy', status: record.enrich_status },
           ]).map((t) => (
             <button key={t.id} onClick={() => setTab(t.id)}
               style={{
@@ -197,10 +197,12 @@ function ActionBtn({ icon, label, status, onClick, color, disabled = false }: {
       className="btn-action"
       style={{
         flex: 1,
-        background: off ? 'var(--surface)' : `${color}18`,
+        background: off ? 'var(--surface)' : `${color}22`,
         color: off ? 'var(--ink-4)' : color,
-        border: `1px solid ${off ? 'var(--glass-border)' : color + '35'}`,
+        border: `1.5px solid ${off ? 'var(--glass-border)' : color + '55'}`,
         opacity: disabled && !loading ? 0.45 : 1,
+        boxShadow: off ? 'none' : `0 2px 8px ${color}20`,
+        fontWeight: 600,
       }}
     >
       {icon}
