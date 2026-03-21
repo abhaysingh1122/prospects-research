@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { CompanyRecord, ActionStatus } from '@/lib/types';
 import { StatusBadge } from './StatusBadge';
-import { X, Search, Trash2, ExternalLink, Building2, Users, Globe, Briefcase, Copy, Check, Maximize2, Minimize2 } from 'lucide-react';
+import { X, Search, Trash2, ExternalLink, Building2, Users, Globe, Briefcase, Copy, Check, Maximize2, Minimize2, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface RecordDrawerProps {
@@ -14,7 +14,7 @@ interface RecordDrawerProps {
 }
 
 export function RecordDrawer({ record, onClose, onUpdate, onDelete }: RecordDrawerProps) {
-  const [tab, setTab] = useState<'research' | 'competitor' | 'enrich'>('research');
+  const [tab, setTab] = useState<'research' | 'competitor' | 'enrich' | 'email'>('research');
   const [expanded, setExpanded] = useState(false);
 
   if (!record) return null;
@@ -97,6 +97,26 @@ export function RecordDrawer({ record, onClose, onUpdate, onDelete }: RecordDraw
     }
   }
 
+  async function handleEmail() {
+    if (!record) return;
+    onUpdate({ ...record, email_status: 'loading' });
+    setTab('email');
+    try {
+      const res = await fetch('/api/email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: record.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Email draft failed');
+      onUpdate({ ...record, email_status: 'done', email_draft: data.email_draft });
+      toast.success('Email draft ready');
+    } catch (err) {
+      onUpdate({ ...record, email_status: 'error', email_error: err instanceof Error ? err.message : 'Unknown error' });
+      toast.error('Email draft failed');
+    }
+  }
+
   return (
     <div
       style={{ position: 'fixed', inset: 0, zIndex: 300, display: 'flex', justifyContent: 'flex-end', background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}
@@ -148,6 +168,7 @@ export function RecordDrawer({ record, onClose, onUpdate, onDelete }: RecordDraw
           <ActionBtn icon={<Search size={13} />} label="Company Research" status={record.research_status} onClick={handleResearch} color="var(--teal)" />
           <ActionBtn icon={<Building2 size={13} />} label="Competitor Research" status={record.competitor_status} onClick={handleCompetitor} color="var(--purple)" />
           <ActionBtn icon={<Users size={13} />} label="Generate Strategy" status={record.enrich_status} onClick={handleEnrich} color="var(--blue)" />
+          <ActionBtn icon={<Mail size={13} />} label="Draft Email" status={record.email_status} onClick={handleEmail} color="var(--green)" />
         </div>
 
         {/* Tabs */}
@@ -156,6 +177,7 @@ export function RecordDrawer({ record, onClose, onUpdate, onDelete }: RecordDraw
             { id: 'research' as const, label: 'Research', status: record.research_status },
             { id: 'competitor' as const, label: 'Competitor', status: record.competitor_status },
             { id: 'enrich' as const, label: 'Strategy', status: record.enrich_status },
+            { id: 'email' as const, label: 'Email Drafts', status: record.email_status },
           ]).map((t) => (
             <button key={t.id} onClick={() => setTab(t.id)}
               style={{
@@ -179,6 +201,7 @@ export function RecordDrawer({ record, onClose, onUpdate, onDelete }: RecordDraw
           {tab === 'research' && <ResearchContent record={record} />}
           {tab === 'competitor' && <CompetitorContent record={record} />}
           {tab === 'enrich' && <EnrichContent record={record} />}
+          {tab === 'email' && <EmailContent record={record} />}
         </div>
       </div>
     </div>
@@ -595,6 +618,54 @@ function EnrichContent({ record }: { record: CompanyRecord }) {
         </DataBox>
       )}
 
+    </div>
+  );
+}
+
+function EmailContent({ record }: { record: CompanyRecord }) {
+  if (record.email_status === 'idle') return (
+    <Empty icon={<Mail size={28} />} text="Click Draft Email to generate an outreach email" />
+  );
+  if (record.email_status === 'loading') return (
+    <Loading color="var(--green)" text="Drafting email..." />
+  );
+  if (record.email_status === 'error') return (
+    <ErrorBox text={record.email_error || 'Email draft failed'} />
+  );
+
+  const d = record.email_draft;
+  if (!d) return (
+    <Empty icon={<Mail size={28} />} text="No email draft available" />
+  );
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+
+      {d.to && (
+        <DataBox label="To">
+          <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '.75rem', color: 'var(--ink-2)' }}>{d.to}</span>
+        </DataBox>
+      )}
+
+      <DataBox label="Subject">
+        <span style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '.88rem', color: 'var(--ink)' }}>{d.subject}</span>
+      </DataBox>
+
+      <DataBox label="Body">
+        <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '.82rem', color: 'var(--ink-2)', lineHeight: 1.8, whiteSpace: 'pre-line' }}>{d.body}</p>
+      </DataBox>
+
+      <button
+        onClick={() => {
+          navigator.clipboard.writeText(`Subject: ${d.subject}\n\n${d.body}`);
+          toast.success('Email copied to clipboard');
+        }}
+        className="btn-action"
+        style={{ color: 'var(--green)', border: 'none', justifyContent: 'center' }}
+      >
+        <Copy size={13} />
+        Copy Email
+      </button>
     </div>
   );
 }
