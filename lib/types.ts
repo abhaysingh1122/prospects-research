@@ -78,5 +78,6 @@ export type CompanyRecord = {
   // Send
   send_status: ActionStatus;
   sent_at?: string;
+  send_message_id?: string;
   send_error?: string;
 };
