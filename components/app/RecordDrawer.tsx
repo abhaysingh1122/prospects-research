@@ -414,7 +414,7 @@ function CompetitorContent({ record }: { record: CompanyRecord }) {
             {d.competitor_website && (
               <a href={d.competitor_website.startsWith('http') ? d.competitor_website : `https://${d.competitor_website}`}
                 target="_blank" rel="noopener noreferrer"
-                style={{ display: 'flex', alignItems: 'center', gap: '4px', fontFamily: 'DM Mono, monospace', fontSize: '.65rem', color: 'var(--orange, var(--red))', textDecoration: 'none' }}>
+                style={{ display: 'flex', alignItems: 'center', gap: '4px', fontFamily: 'DM Mono, monospace', fontSize: '.65rem', color: 'var(--blue)', textDecoration: 'underline', textUnderlineOffset: '2px' }}>
                 <ExternalLink size={10} />{d.competitor_website}
               </a>
             )}
