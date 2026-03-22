@@ -38,6 +38,10 @@ An AI-powered company research interface built with Next.js 16.
 - `/api/competitor-research` — forwards to n8n competitor webhook with Interface ID
 - Dev mode mocks for both routes when webhooks are not configured
 
+## Flow Diagram
+
+<img width="3251" height="2024" alt="Untitled-2024-07-29-1951" src="https://github.com/user-attachments/assets/0acdd4fa-3a7d-46b2-8149-a8c290145183" />
+
 ## Stack
 
 - Next.js 16 (App Router)
@@ -46,6 +50,11 @@ An AI-powered company research interface built with Next.js 16.
 - localStorage (client-side database)
 - n8n (automation layer)
 - Airtable (data source)
+
+## Frontend Glance
+
+<img width="1909" height="973" alt="image" src="https://github.com/user-attachments/assets/dda78d40-6782-401c-9af2-c2a78fbcbf43" />
+
 
 ## Setup
 
